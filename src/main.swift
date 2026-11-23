@@ -168,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func applySettings() {
         let settings = store.value
-        capsule.capsule.apply(settings: settings, running: wake.isRunning, progress: wakeProgress())
+        capsule.capsule.apply(settings: settings, running: wake.isRunning)
         card.applySettings()
         refreshPrice()
     }
@@ -182,15 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func refreshWake() {
         capsule.capsule.button.isActive = wake.isRunning
-        capsule.capsule.button.showsRing = wake.isRunning && wakeProgress() > 0
-        capsule.capsule.button.ringProgress = wakeProgress()
         if card.isVisible { card.wakePage.refresh() }
-    }
-
-    /// 环形进度 = 已用时间 / 总时长。
-    private func wakeProgress() -> CGFloat {
-        guard let total = wake.total, let left = wake.remaining, total > 0 else { return 0 }
-        return CGFloat(max(0, min(1, 1 - left / total)))
     }
 
     // MARK: - 交互

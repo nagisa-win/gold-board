@@ -130,16 +130,15 @@ final class CapsuleView: NSView {
         numberView.signal = signal
     }
 
-    func apply(settings: AppSettings, running: Bool, progress: CGFloat) {
+    func apply(settings: AppSettings, running: Bool) {
         let opacity = settings.capsuleOpacity / 100
         // 底色比滑杆更快变实：t=62% 时约 0.67，t=100% 时 0.94，避免半透明时发灰。
         backdrop.fillColor = opacity > 0.01
             ? Tokens.graphite.withAlphaComponent(0.94 * pow(opacity, 0.7))
             : .clear
         button.symbol = settings.buttonSymbol
+        // 运行中只把图标点亮成金色，不再在按钮上叠进度环。
         button.isActive = running
-        button.showsRing = running && progress > 0
-        button.ringProgress = progress
         button.tint = opacity < 0.24 ? Tokens.ink.withAlphaComponent(0.55) : Tokens.muted(0.55)
         numberView.needsDisplay = true
         backdrop.needsDisplay = true

@@ -15,13 +15,6 @@ final class IconButton: NSView {
     var isSelected = false {
         didSet { needsDisplay = true }
     }
-    var showsRing = false {
-        didSet { needsDisplay = true }
-    }
-    /// 0…1 的剩余比例，用于环形进度。
-    var ringProgress: CGFloat = 0 {
-        didSet { if showsRing { needsDisplay = true } }
-    }
     var iconSize: CGFloat = 15
     var onClick: (() -> Void)?
     var onRightClick: (() -> Void)?
@@ -78,26 +71,8 @@ final class IconButton: NSView {
                                   y: bounds.midY - size.height / 2,
                                   width: size.width, height: size.height))
         }
-        if showsRing { drawRing(color: activeTint) }
     }
 
-    private func drawRing(color: NSColor) {
-        let radius = min(bounds.width, bounds.height) / 2 - 1
-        let center = NSPoint(x: bounds.midX, y: bounds.midY)
-        let track = NSBezierPath()
-        track.appendArc(withCenter: center, radius: radius, startAngle: 0, endAngle: 360)
-        track.lineWidth = 1.5
-        color.withAlphaComponent(0.18).setStroke()
-        track.stroke()
-        guard ringProgress > 0.001 else { return }
-        let arc = NSBezierPath()
-        arc.appendArc(withCenter: center, radius: radius,
-                      startAngle: 90, endAngle: 90 - 360 * min(1, ringProgress), clockwise: true)
-        arc.lineWidth = 1.5
-        arc.lineCapStyle = .round
-        color.setStroke()
-        arc.stroke()
-    }
 }
 
 /** 可多选的小参数 chip（caffeinate 的 -i -d -m -s -u）。 */
