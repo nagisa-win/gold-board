@@ -1,0 +1,109 @@
+name: release
+
+# 打 tag（v1.2.0）即编译并发布 Release；也可以在 Actions 页面手动指定版本号触发。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，不带 v，例如 1.2.0"
+        required: true
+      prerelease:
+        description: "标记为预发布（不会出现在 Latest）"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 解析版本号
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          case "$version" in
+            '' ) echo "版本号为空" >&2; exit 1 ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: 类型检查
+        run: make typecheck
+
+      - name: 写入版本号
+        run: |
+          plutil -replace CFBundleShortVersionString -string "${{ steps.version.outputs.version }}" src/Info.plist
+          plutil -replace CFBundleVersion -string "${{ github.run_number }}" src/Info.plist
+          plutil -p src/Info.plist | grep -E "CFBundleShortVersionString|CFBundleVersion"
+
+      - name: 构建
+        run: make build
+
+      - name: 校验产物
+        run: |
+          codesign --verify --strict --all-architectures "src/build/国内金价.app"
+          lipo -archs "src/build/国内金价.app/Contents/MacOS/GoldFloat"
+          "src/build/国内金价.app/Contents/MacOS/GoldFloat" --history-info
+
+      - name: 打包并生成校验和
+        id: package
+        run: |
+          cd src/build
+          name="GoldFloat-${{ steps.version.outputs.version }}.zip"
+          ditto -c -k --sequesterRsrc --keepParent "国内金价.app" "$name"
+          shasum -a 256 "$name" | tee "$name.sha256"
+          echo "asset=$PWD/$name" >> "$GITHUB_OUTPUT"
+          echo "checksum=$PWD/$name.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: 发布 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="${{ steps.version.outputs.tag }}"
+          version="${{ steps.version.outputs.version }}"
+          flags=""
+          if [ "${{ inputs.prerelease }}" = "true" ]; then flags="--prerelease"; fi
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            # 同一个 tag 重复触发时覆盖资产，不新建 Release。
+            gh release upload "$tag" \
+              "${{ steps.package.outputs.asset }}" \
+              "${{ steps.package.outputs.checksum }}" --clobber
+          else
+            gh release create "$tag" \
+              "${{ steps.package.outputs.asset }}" \
+              "${{ steps.package.outputs.checksum }}" \
+              --title "国内金价 $tag" \
+              --generate-notes $flags
+          fi
+
+          # 在自动生成的变更列表后追加安装说明。
+          {
+            gh release view "$tag" --json body -q .body
+            echo
+            echo "### 安装"
+            echo
+            echo "1. 下载 \`GoldFloat-${version}.zip\` 并解压得到 \`国内金价.app\`"
+            echo "2. 首次运行前去掉隔离标记：\`xattr -dr com.apple.quarantine \"国内金价.app\"\`"
+            echo "3. 双击运行；应用无 Dock 图标，浮窗默认在屏幕右上角"
+            echo
+            echo "应用为 adhoc 签名、未做公证，因此需要第 2 步；可用随附的 \`.sha256\` 校验下载完整性。"
+          } > /tmp/notes.md
+          gh release edit "$tag" --notes-file /tmp/notes.md

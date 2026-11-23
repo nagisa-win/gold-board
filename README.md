@@ -61,6 +61,20 @@ xattr -dr com.apple.quarantine "国内金价.app"
 | --- | --- | --- |
 | ![唤醒](docs/images/page-wake.png) | ![通知](docs/images/page-notify.png) | ![外观](docs/images/page-appearance.png) |
 
+## 发布（GitHub Actions）
+
+推一个 `v*` tag 就会自动编译并发布 Release：
+
+```sh
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+- `release.yml`：类型检查 → 写入版本号（`CFBundleShortVersionString` 取 tag、`CFBundleVersion` 取运行号）→ 双架构构建 → 校验签名与架构 → 打包 `GoldFloat-<版本>.zip` 与 `.sha256` → 创建 Release（自动生成变更列表并追加安装说明；同 tag 重复触发只覆盖资产）
+- `build.yml`：`main` 分支与 PR 只做构建校验，`main` 的构建产物保留 14 天
+- 也可以在 Actions 页面手动触发 `release`，填版本号并选择是否预发布
+- 产物是 adhoc 签名、未做公证，下载后需要先 `xattr -dr com.apple.quarantine`
+
 ## 命令行
 
 ```sh

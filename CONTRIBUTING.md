@@ -31,6 +31,12 @@ open "./build/国内金价.app"
 
 本项目的可配置项一律通过 `NSHomeDirectory()`、`Application Support` 推导路径，不要写死机器相关位置。
 
+## 版本与发布
+
+- 版本号只在发布时由 CI 写入 `src/Info.plist`，平时不要手改。
+- 发布流程：合并到 `main` → `git tag v1.2.0` → `git push origin v1.2.0`，`release.yml` 会自动产出 Release。
+- 需要临时发版时，可在 Actions 里手动触发 `release` 并填写版本号。
+
 ## 提交信息
 
 使用简短的祈使句，例如 `capsule: 修正左侧内边距`、`feed: 增加备用行情源`。
