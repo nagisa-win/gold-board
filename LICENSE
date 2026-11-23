@@ -28,7 +28,7 @@ SOFTWARE.
 
 1. os6/nospeaker — MIT License, Copyright (c) 2026 Cody Collier
    https://github.com/os6/nospeaker
-   触控板马达的驱动方式（MultitouchSupport 私有框架、波形字典结构）与语音转马达音的双共振峰映射参考了该项目。
+   触控板马达的驱动方式（MultitouchSupport 私有框架、波形字典结构、按频率下发正弦音）参考了该项目。
 
 2. Maple Mono — SIL Open Font License 1.1
    https://github.com/subframe7536/maple-font

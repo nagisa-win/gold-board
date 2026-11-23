@@ -14,9 +14,6 @@ final class NotifyPage: NSView {
     private var eventRows: [EventRow] = []
     private var toolRows: [ToolRow] = []
     private let status = NSTextField(labelWithString: "")
-    private let speechLabel = NSTextField(labelWithString: "Turn 语音")
-    private let speechField = NSTextField()
-    private let speechBox = SolidBackdrop(radius: 6, fill: NSColor.white.withAlphaComponent(0.07))
 
     private let eventTitles: [(key: String, title: String)] = [
         ("turn", "Turn 完成"), ("surge", "金价急涨"), ("plunge", "金价急跌"), ("timer", "定时器结束"),
@@ -69,26 +66,6 @@ final class NotifyPage: NSView {
             toolRows.append(row)
         }
 
-        speechLabel.font = Tokens.text(11.5)
-        speechLabel.textColor = Tokens.muted(0.72)
-        speechField.font = Tokens.text(11)
-        speechField.textColor = Tokens.paper
-        speechField.isBordered = false
-        speechField.isEditable = true
-        speechField.isSelectable = true
-        speechField.focusRingType = .none
-        speechField.drawsBackground = false
-        speechField.placeholderString = "点这里输入，回车或用它播报：" + EventConfig.defaultSpeech(for: "turn")
-        speechField.stringValue = settings.event("turn").speech
-        speechField.target = self
-        speechField.action = #selector(changeSpeech)
-        // 失焦也保存，不用非要回车
-        NotificationCenter.default.addObserver(self, selector: #selector(changeSpeech),
-                                               name: NSControl.textDidEndEditingNotification, object: speechField)
-        NotificationCenter.default.addObserver(self, selector: #selector(beginSpeech),
-                                               name: NSControl.textDidBeginEditingNotification, object: speechField)
-        // 无边框面板默认不抢焦点，点一下先激活再聚焦
-        speechBox.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(focusSpeech)))
 
         status.font = Tokens.text(9.5)
         status.textColor = Tokens.muted(0.4)
@@ -96,7 +73,7 @@ final class NotifyPage: NSView {
         status.maximumNumberOfLines = 1
 
         [title, hapticRow, strengthLabel, strength, notifyRow, soundLabel, soundPopup,
-         eventSection, toolSection, status, speechLabel, speechBox, speechField].forEach(addSubview)
+         eventSection, toolSection, status].forEach(addSubview)
         eventRows.forEach(addSubview)
         toolRows.forEach(addSubview)
     }
@@ -123,13 +100,9 @@ final class NotifyPage: NSView {
             row.frame = NSRect(x: 0, y: 90 + CGFloat(index) * 22, width: width, height: 20)
         }
 
-        speechLabel.frame = NSRect(x: 0, y: 184, width: 60, height: 16)
-        speechBox.frame = NSRect(x: 62, y: 181, width: width - 62, height: 22)
-        speechField.frame = NSRect(x: 70, y: 184, width: width - 78, height: 17)
-
-        toolSection.frame = NSRect(x: 0, y: 210, width: 160, height: 12)
+        toolSection.frame = NSRect(x: 0, y: 190, width: 160, height: 12)
         for (index, row) in toolRows.enumerated() {
-            row.frame = NSRect(x: 0, y: 224 + CGFloat(index) * 22, width: width, height: 20)
+            row.frame = NSRect(x: 0, y: 204 + CGFloat(index) * 22, width: width, height: 20)
         }
         status.frame = NSRect(x: 0, y: bounds.height - 12, width: width, height: 12)
     }
@@ -143,9 +116,6 @@ final class NotifyPage: NSView {
         if let index = Notifier.soundNames.firstIndex(of: settings.soundName) {
             soundPopup.selectItem(at: index)
         }
-        if speechField.currentEditor() == nil {
-            speechField.stringValue = settings.event("turn").speech
-        }
         eventRows.forEach { $0.refresh() }
         toolRows.forEach { $0.refresh() }
     }
@@ -155,20 +125,8 @@ final class NotifyPage: NSView {
         StatusHUD.say("已保存")
     }
 
-    @objc private func beginSpeech() {
-        (window as? CardPanel)?.lockOpen()
-    }
 
-    @objc private func focusSpeech() {
-        NSApp.activate(ignoringOtherApps: true)
-        window?.makeKey()
-        window?.makeFirstResponder(speechField)
-    }
 
-    @objc private func changeSpeech() {
-        let text = speechField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        SettingsStore.shared.update { $0.events["turn", default: EventConfig()].speech = text }
-    }
 
     @objc private func changeSound() {
         let index = max(0, soundPopup.indexOfSelectedItem)
@@ -198,7 +156,17 @@ final class EventRow: NSView {
         popup.font = Tokens.text(11)
         popup.isBordered = false
         popup.focusRingType = .none
-        popup.addItems(withTitles: Haptics.presetNames.map(\.title))
+        // 按「简单震动 / 节奏 / 旋律」分组，组间用分隔线隔开。
+        let menu = popup.menu ?? NSMenu()
+        for (sectionIndex, section) in Haptics.presetSections.enumerated() {
+            if sectionIndex > 0 { menu.addItem(.separator()) }
+            for item in section.items {
+                let row = NSMenuItem(title: item.title, action: nil, keyEquivalent: "")
+                row.representedObject = item.id
+                menu.addItem(row)
+            }
+        }
+        popup.menu = menu
         popup.target = self
         popup.action = #selector(changed)
         addSubview(popup)
@@ -207,9 +175,7 @@ final class EventRow: NSView {
         play.onClick = { [weak self] in
             guard let self else { return }
             let settings = SettingsStore.shared.value
-            let config = settings.event(self.key)
-            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: self.key) : config.speech
-            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
+            Haptics.shared.play(settings.event(self.key).preset, strength: settings.hapticStrength)
         }
         addSubview(play)
 
@@ -224,7 +190,7 @@ final class EventRow: NSView {
     override func layout() {
         super.layout()
         label.frame = NSRect(x: 0, y: (bounds.height - 16) / 2, width: 80, height: 16)
-        popup.frame = NSRect(x: 84, y: (bounds.height - 20) / 2, width: 68, height: 20)
+        popup.frame = NSRect(x: 84, y: (bounds.height - 20) / 2, width: 78, height: 20)
         play.frame = NSRect(x: 174, y: (bounds.height - 18) / 2, width: 18, height: 18)
         toggle.frame = NSRect(x: bounds.width - 28, y: (bounds.height - 16) / 2, width: 28, height: 16)
     }
@@ -232,8 +198,9 @@ final class EventRow: NSView {
     func refresh() {
         let config = SettingsStore.shared.value.event(key)
         toggle.isOn = config.haptic
-        if let index = Haptics.presetNames.firstIndex(where: { $0.id == config.preset }) {
-            popup.selectItem(at: index)
+        if let menu = popup.menu,
+           let matched = menu.items.firstIndex(where: { ($0.representedObject as? String) == config.preset }) {
+            popup.selectItem(at: matched)
         }
     }
 
@@ -244,8 +211,7 @@ final class EventRow: NSView {
     }
 
     @objc private func changed() {
-        let index = max(0, popup.indexOfSelectedItem)
-        let preset = Haptics.presetNames[min(index, Haptics.presetNames.count - 1)].id
+        guard let preset = popup.selectedItem?.representedObject as? String else { return }
         SettingsStore.shared.update { $0.events[key, default: EventConfig()].preset = preset }
         onChange?()
     }

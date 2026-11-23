@@ -9,8 +9,7 @@ enum FireOnce {
         let settings = SettingsStore.shared.value
         let config = settings.event(key)
         if settings.hapticEnabled && config.haptic {
-            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: key) : config.speech
-            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
+            Haptics.shared.play(config.preset, strength: settings.hapticStrength)
         }
         if !settings.soundName.isEmpty, let player = NSSound(named: settings.soundName) {
             player.play()
@@ -56,12 +55,6 @@ if let index = CommandLine.arguments.firstIndex(of: "--melody"),
     exit(0)
 }
 
-if let index = CommandLine.arguments.firstIndex(of: "--say"),
-   index + 1 < CommandLine.arguments.count {
-    Haptics.shared.speak(CommandLine.arguments[index + 1], level: 0.85)
-    RunLoop.main.run(until: Date().addingTimeInterval(5.0))
-    exit(0)
-}
 
 // 自检：打印触控板马达是否可用，便于排查「震动没反应」。
 if CommandLine.arguments.contains("--haptic-info") {
@@ -301,8 +294,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = store.value
         let config = settings.event(key)
         if settings.hapticEnabled && config.haptic {
-            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: key) : config.speech
-            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
+            Haptics.shared.play(config.preset, strength: settings.hapticStrength)
         }
         if settings.systemNotifyEnabled && config.notify {
             let title = key == "turn" ? "Turn 完成" : key == "surge" ? "金价急涨" : "金价急跌"
