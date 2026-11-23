@@ -85,6 +85,8 @@ final class NotifyPage: NSView {
         // 失焦也保存，不用非要回车
         NotificationCenter.default.addObserver(self, selector: #selector(changeSpeech),
                                                name: NSControl.textDidEndEditingNotification, object: speechField)
+        NotificationCenter.default.addObserver(self, selector: #selector(beginSpeech),
+                                               name: NSControl.textDidBeginEditingNotification, object: speechField)
         // 无边框面板默认不抢焦点，点一下先激活再聚焦
         speechBox.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(focusSpeech)))
 
@@ -151,6 +153,10 @@ final class NotifyPage: NSView {
     private func reloadEvents() {
         eventRows.forEach { $0.refresh() }
         StatusHUD.say("已保存")
+    }
+
+    @objc private func beginSpeech() {
+        (window as? CardPanel)?.lockOpen()
     }
 
     @objc private func focusSpeech() {

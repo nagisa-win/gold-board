@@ -21,6 +21,9 @@ final class CardPanel: NSPanel {
     /// 单击锁定的浮卡不随鼠标移出收起。
     private(set) var locked = false
 
+    /// 无边框 + nonactivating 面板默认不成 key window，文字输入会没有焦点。
+    override var canBecomeKey: Bool { true }
+
     private let navSymbols = [
         ("chart.line.uptrend.xyaxis", "金价走势"),
         ("timer", "唤醒定时器"),
@@ -31,7 +34,9 @@ final class CardPanel: NSPanel {
         super.init(contentRect: NSRect(x: 0, y: 0,
                                        width: Tokens.Metric.cardWidth,
                                        height: Tokens.Metric.cardHeight),
-                   styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+                   // 浮卡需要接受文字输入，因此不使用 nonactivatingPanel：
+                   // 点进去时允许本应用被激活并成为 key window，胶囊浮窗仍然不抢焦点。
+                   styleMask: [.borderless], backing: .buffered, defer: false)
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
@@ -154,6 +159,11 @@ final class CardPanel: NSPanel {
             orderFrontRegardless()
         }
         select(selected)
+    }
+
+    /// 输入等交互期间锁定，避免鼠标离开自动收起。
+    func lockOpen() {
+        locked = true
     }
 
     func hide() {
