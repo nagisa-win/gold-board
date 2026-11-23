@@ -22,10 +22,17 @@ final class CapsuleNumberView: NSView {
 
         let numberFont = Tokens.number(17, .semibold)
         let labelFont = Tokens.cjk(11, .medium)
-        let numberAttrs: [NSAttributedString.Key: Any] = [.font: numberFont, .foregroundColor: color]
+        // 浮窗文字统一带一层柔和阴影：浅色字用黑色投影，深色字用白色柔光，任何壁纸上都更立体。
+        let shadow = Self.textShadow(lightText: light)
+        let numberAttrs: [NSAttributedString.Key: Any] = [
+            .font: numberFont,
+            .foregroundColor: color,
+            .shadow: shadow,
+        ]
         let labelAttrs: [NSAttributedString.Key: Any] = [
             .font: labelFont,
             .foregroundColor: color.withAlphaComponent(0.45),
+            .shadow: shadow,
         ]
 
         // 两段共用一条基线：以数字行盒居中为准。
@@ -35,18 +42,25 @@ final class CapsuleNumberView: NSView {
         ("金" as NSString).draw(at: NSPoint(x: 0, y: baseline + labelFont.descender),
                                 withAttributes: labelAttrs)
 
-        let text = NSMutableAttributedString(string: number, attributes: numberAttrs)
-        if light {
-            let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
-            shadow.shadowBlurRadius = 2
-            shadow.shadowOffset = NSSize(width: 0, height: -0.5)
-            text.addAttribute(.shadow, value: shadow,
-                              range: NSRange(location: 0, length: text.length))
-        }
+        let text = NSAttributedString(string: number, attributes: numberAttrs)
         let size = text.size()
         text.draw(at: NSPoint(x: bounds.width - size.width,
                               y: baseline + numberFont.descender))
+    }
+
+    /// 浮窗文字阴影：白字用黑色投影，黑字用白色柔光。
+    static func textShadow(lightText: Bool) -> NSShadow {
+        let shadow = NSShadow()
+        if lightText {
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.38)
+            shadow.shadowBlurRadius = 2.2
+            shadow.shadowOffset = NSSize(width: 0, height: -0.6)
+        } else {
+            shadow.shadowColor = NSColor.white.withAlphaComponent(0.55)
+            shadow.shadowBlurRadius = 1.8
+            shadow.shadowOffset = NSSize(width: 0, height: -0.4)
+        }
+        return shadow
     }
 
     /// 透明态黑字，深底态白字；涨跌色跟随同一规则。
