@@ -1,14 +1,12 @@
 name: build
 
+# 只在手动触发时跑：日常 push 不占 macOS runner 队列。
+# tag 触发的构建与校验由 release.yml 负责，两处不重复排队。
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
   build:
-    # macOS 14 的 arm64 机型在当前账号不可用，统一用 Intel 机型交叉编译双架构
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
@@ -25,11 +23,10 @@ jobs:
           lipo -archs "src/build/国内金价.app/Contents/MacOS/GoldFloat"
           "src/build/国内金价.app/Contents/MacOS/GoldFloat" --history-info
 
-      - name: 保留构建产物（仅 main 分支，14 天）
-        if: github.event_name == 'push'
+      - name: 保留构建产物（14 天）
         uses: actions/upload-artifact@v4
         with:
-          name: GoldFloat-main-${{ github.sha }}
+          name: GoldFloat-manual-${{ github.sha }}
           path: src/build/国内金价.app
           retention-days: 14
           if-no-files-found: error

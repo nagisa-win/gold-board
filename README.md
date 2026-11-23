@@ -71,8 +71,8 @@ git push origin v1.0.1
 ```
 
 - `release.yml`：类型检查 → 写入版本号（`CFBundleShortVersionString` 取 tag、`CFBundleVersion` 取运行号）→ 双架构构建 → 校验签名与架构 → 打包 `GoldFloat-<版本>.zip` 与 `.sha256` → 创建 Release（自动生成变更列表并追加安装说明；同 tag 重复触发只覆盖资产）
-- `build.yml`：`main` 分支与 PR 只做构建校验，`main` 的构建产物保留 14 天
-- 也可以在 Actions 页面手动触发 `release`，填版本号并选择是否预发布
+- `build.yml`：只在手动触发时跑一次构建校验（保留产物 14 天），日常 push 不排队占 macOS runner
+- 也可以在 Actions 页面手动触发 `release` 填版本号发版，或手动触发 `build` 只做一次构建校验
 - 产物是 adhoc 签名、未做公证，下载后需要先 `xattr -dr com.apple.quarantine`
 
 ## 命令行
