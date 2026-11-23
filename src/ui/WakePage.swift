@@ -17,6 +17,8 @@ final class WakePage: NSView {
     private let arrow = NSTextField(labelWithString: "→")
     private let action = PillButton(title: "开始唤醒")
     private let command = NSTextField(labelWithString: "")
+    private let lockLabel = NSTextField(labelWithString: "锁屏 10 秒后熄屏")
+    private let lockToggle = Toggle(isOn: SettingsStore.shared.value.dimOnLock)
 
     private let durations: [(title: String, seconds: Double)] = [
         ("30 分", 1800), ("1 时", 3600), ("2 时", 7200), ("4 时", 14400),
@@ -79,7 +81,15 @@ final class WakePage: NSView {
 
         action.onClick = { [weak self] in self?.toggle() }
 
-        [title, state, segmented, remaining, ring, hint, durationRow, rangeRow, action, command].forEach(addSubview)
+        lockLabel.font = Tokens.text(11.5)
+        lockLabel.textColor = Tokens.muted(0.72)
+        lockToggle.onChange = { value in
+            SettingsStore.shared.update { $0.dimOnLock = value }
+            ScreenLockWatcher.shared.applyEnabledState()
+        }
+
+        [title, state, segmented, remaining, ring, hint, durationRow, rangeRow, action,
+         lockLabel, lockToggle, command].forEach(addSubview)
         chips.forEach(addSubview)
 
         refresh()
@@ -111,8 +121,10 @@ final class WakePage: NSView {
         arrow.frame = NSRect(x: 98, y: 2, width: 16, height: 18)
         endPopup.frame = NSRect(x: 118, y: 0, width: 92, height: 22)
 
-        action.frame = NSRect(x: 0, y: 178, width: 120, height: 26)
-        command.frame = NSRect(x: 0, y: 212, width: bounds.width, height: 14)
+        action.frame = NSRect(x: 0, y: 176, width: 120, height: 26)
+        lockLabel.frame = NSRect(x: 0, y: 212, width: 130, height: 16)
+        lockToggle.frame = NSRect(x: bounds.width - 28, y: 212, width: 28, height: 16)
+        command.frame = NSRect(x: 0, y: 238, width: bounds.width, height: 14)
     }
 
     // MARK: - 状态
@@ -166,6 +178,7 @@ final class WakePage: NSView {
             ring.isHidden = true
         }
 
+        lockToggle.isOn = settings.dimOnLock
         command.stringValue = "caffeinate -" + settings.wakeFlags.joined()
         if let error = wake.lastError {
             command.stringValue = error

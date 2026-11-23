@@ -118,6 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         capsule.capsule.button.onClick = { [weak self] in self?.toggleWake() }
         capsule.capsule.button.onRightClick = { [weak self] in self?.showFlagMenu() }
 
+        ScreenLockWatcher.shared.start()
         Notifier.shared.prepare()
         applySettings()
         feed.start()
@@ -133,6 +134,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ note: Notification) {
         clock?.invalidate()
         feed.stop()
+        // 退出前把锁屏期间压低的亮度还回去，避免下次开机是黑屏。
+        ScreenLockWatcher.shared.stop()
     }
 
     // MARK: - 装配
@@ -170,6 +173,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = store.value
         capsule.capsule.apply(settings: settings, running: wake.isRunning)
         card.applySettings()
+        ScreenLockWatcher.shared.applyEnabledState()
         refreshPrice()
     }
 

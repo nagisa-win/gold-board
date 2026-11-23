@@ -45,6 +45,9 @@ struct AppSettings: Codable {
     var wakeStartMinute: Int = 0
     var wakeEndMinute: Int = 120
 
+    /// 锁屏 10 秒后把内置屏亮度降到 0，解锁恢复。
+    var dimOnLock: Bool = true
+
     /// 触控板震动总开关。
     var hapticEnabled: Bool = true
     /// 系统通知总开关。
