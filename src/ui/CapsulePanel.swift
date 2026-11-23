@@ -51,14 +51,14 @@ final class CapsuleNumberView: NSView {
     /// 浮窗文字阴影：白字用黑色投影，黑字用白色柔光。
     static func textShadow(lightText: Bool) -> NSShadow {
         let shadow = NSShadow()
+        // 偏移保持 0,0：只要一圈均匀的柔光，不要投影的「立体感」。
+        shadow.shadowOffset = .zero
         if lightText {
             shadow.shadowColor = NSColor.black.withAlphaComponent(0.38)
             shadow.shadowBlurRadius = 2.2
-            shadow.shadowOffset = NSSize(width: 0, height: -0.6)
         } else {
             shadow.shadowColor = NSColor.white.withAlphaComponent(0.55)
             shadow.shadowBlurRadius = 1.8
-            shadow.shadowOffset = NSSize(width: 0, height: -0.4)
         }
         return shadow
     }
