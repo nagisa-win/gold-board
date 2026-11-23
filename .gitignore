@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+._*
+
+# 构建产物（本地编译生成，不入库）
+src/build/
+*.app/
+*.dSYM/
+build/
+
+# 备份与日志
+*.bak-*
+*.log
+
+# Xcode / SPM 若日后启用
+*.xcuserstate
+.swiftpm/

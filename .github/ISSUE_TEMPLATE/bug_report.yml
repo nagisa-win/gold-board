@@ -1,0 +1,48 @@
+name: 问题反馈
+description: 报告一个可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        与震动相关的问题，请先附上 `"…/GoldFloat" --haptic-info` 的输出；
+        与行情相关的问题，请说明 `--history-info` 的缓存天数，便于判断是数据源还是解析问题。
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 版本
+      placeholder: 例如 15.8.3
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: 机型
+      placeholder: 例如 MacBookPro18,3
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: 1. 悬停浮窗 2. 点开唤醒页 3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果与实际结果
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关输出
+      description: 例如 `--haptic-info` / `--history-info` / 控制台报错
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 自查
+      options:
+        - label: 已确认使用的是最新源码自行编译的版本
+        - label: 未在 issue 中粘贴任何密钥、账号或内网信息

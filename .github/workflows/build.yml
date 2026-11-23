@@ -1,0 +1,30 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 类型检查（警告视为错误）
+        run: |
+          cd src
+          xcrun swiftc -typecheck -warnings-as-errors \
+            -target arm64-apple-macos12.0 -module-name GoldFloat \
+            $(find . -name '*.swift' -not -path './build/*' | sort)
+
+      - name: 构建双架构应用包
+        run: |
+          cd src
+          ./build.sh
+
+      - name: 校验签名与架构
+        run: |
+          codesign --verify --strict --all-architectures "src/build/国内金价.app"
+          lipo -archs "src/build/国内金价.app/Contents/MacOS/GoldFloat"
