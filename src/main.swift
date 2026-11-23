@@ -9,7 +9,8 @@ enum FireOnce {
         let settings = SettingsStore.shared.value
         let config = settings.event(key)
         if settings.hapticEnabled && config.haptic {
-            Haptics.shared.play(config.preset, strength: settings.hapticStrength)
+            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: key) : config.speech
+            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
         }
         if !settings.soundName.isEmpty, let player = NSSound(named: settings.soundName) {
             player.play()
@@ -44,6 +45,21 @@ if CommandLine.arguments.contains("--history-info") {
     let info = HistoryStore.shared.summary()
     print("目录：\(HistoryStore.shared.folderPath)")
     print("已缓存 \(info.days) 天 / \(info.rows) 行（每分钟一行，单位元/克）")
+    exit(0)
+}
+
+// 调试：单独播放一段旋律或语音，用于试听与排查。
+if let index = CommandLine.arguments.firstIndex(of: "--melody"),
+   index + 1 < CommandLine.arguments.count {
+    Haptics.shared.playMelody(CommandLine.arguments[index + 1], level: 0.85)
+    RunLoop.main.run(until: Date().addingTimeInterval(2.5))
+    exit(0)
+}
+
+if let index = CommandLine.arguments.firstIndex(of: "--say"),
+   index + 1 < CommandLine.arguments.count {
+    Haptics.shared.speak(CommandLine.arguments[index + 1], level: 0.85)
+    RunLoop.main.run(until: Date().addingTimeInterval(5.0))
     exit(0)
 }
 
@@ -285,7 +301,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = store.value
         let config = settings.event(key)
         if settings.hapticEnabled && config.haptic {
-            Haptics.shared.play(config.preset, strength: settings.hapticStrength)
+            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: key) : config.speech
+            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
         }
         if settings.systemNotifyEnabled && config.notify {
             let title = key == "turn" ? "Turn 完成" : key == "surge" ? "金价急涨" : "金价急跌"

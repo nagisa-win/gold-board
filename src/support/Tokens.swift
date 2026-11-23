@@ -85,7 +85,7 @@ enum Tokens {
 
         static let railWidth: CGFloat = 48
         static let cardWidth: CGFloat = 372
-        static let cardHeight: CGFloat = 288
+        static let cardHeight: CGFloat = 312
         static let cardRadius: CGFloat = 16
         static let cardGap: CGFloat = 8
         static let cardInset: CGFloat = 14

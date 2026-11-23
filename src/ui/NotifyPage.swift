@@ -14,6 +14,8 @@ final class NotifyPage: NSView {
     private var eventRows: [EventRow] = []
     private var toolRows: [ToolRow] = []
     private let status = NSTextField(labelWithString: "")
+    private let speechLabel = NSTextField(labelWithString: "Turn 语音")
+    private let speechField = NSTextField()
 
     private let eventTitles: [(key: String, title: String)] = [
         ("turn", "Turn 完成"), ("surge", "金价急涨"), ("plunge", "金价急跌"), ("timer", "定时器结束"),
@@ -66,13 +68,25 @@ final class NotifyPage: NSView {
             toolRows.append(row)
         }
 
+        speechLabel.font = Tokens.text(11.5)
+        speechLabel.textColor = Tokens.muted(0.72)
+        speechField.font = Tokens.text(11)
+        speechField.textColor = Tokens.paper
+        speechField.isBordered = false
+        speechField.focusRingType = .none
+        speechField.drawsBackground = false
+        speechField.placeholderString = EventConfig.defaultSpeech(for: "turn")
+        speechField.stringValue = settings.event("turn").speech
+        speechField.target = self
+        speechField.action = #selector(changeSpeech)
+
         status.font = Tokens.text(9.5)
         status.textColor = Tokens.muted(0.4)
         status.lineBreakMode = .byTruncatingTail
         status.maximumNumberOfLines = 1
 
         [title, hapticRow, strengthLabel, strength, notifyRow, soundLabel, soundPopup,
-         eventSection, toolSection, status].forEach(addSubview)
+         eventSection, toolSection, status, speechLabel, speechField].forEach(addSubview)
         eventRows.forEach(addSubview)
         toolRows.forEach(addSubview)
     }
@@ -99,9 +113,12 @@ final class NotifyPage: NSView {
             row.frame = NSRect(x: 0, y: 90 + CGFloat(index) * 22, width: width, height: 20)
         }
 
-        toolSection.frame = NSRect(x: 0, y: 188, width: 160, height: 12)
+        speechLabel.frame = NSRect(x: 0, y: 183, width: 60, height: 16)
+        speechField.frame = NSRect(x: 64, y: 182, width: width - 64, height: 20)
+
+        toolSection.frame = NSRect(x: 0, y: 210, width: 160, height: 12)
         for (index, row) in toolRows.enumerated() {
-            row.frame = NSRect(x: 0, y: 202 + CGFloat(index) * 22, width: width, height: 20)
+            row.frame = NSRect(x: 0, y: 224 + CGFloat(index) * 22, width: width, height: 20)
         }
         status.frame = NSRect(x: 0, y: bounds.height - 12, width: width, height: 12)
     }
@@ -115,6 +132,9 @@ final class NotifyPage: NSView {
         if let index = Notifier.soundNames.firstIndex(of: settings.soundName) {
             soundPopup.selectItem(at: index)
         }
+        if speechField.currentEditor() == nil {
+            speechField.stringValue = settings.event("turn").speech
+        }
         eventRows.forEach { $0.refresh() }
         toolRows.forEach { $0.refresh() }
     }
@@ -122,6 +142,11 @@ final class NotifyPage: NSView {
     private func reloadEvents() {
         eventRows.forEach { $0.refresh() }
         StatusHUD.say("已保存")
+    }
+
+    @objc private func changeSpeech() {
+        let text = speechField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        SettingsStore.shared.update { $0.events["turn", default: EventConfig()].speech = text }
     }
 
     @objc private func changeSound() {
@@ -161,8 +186,9 @@ final class EventRow: NSView {
         play.onClick = { [weak self] in
             guard let self else { return }
             let settings = SettingsStore.shared.value
-            let preset = settings.event(self.key).preset
-            Haptics.shared.play(preset, strength: settings.hapticStrength)
+            let config = settings.event(self.key)
+            let text = config.speech.isEmpty ? EventConfig.defaultSpeech(for: self.key) : config.speech
+            Haptics.shared.play(config.preset, strength: settings.hapticStrength, speech: text)
         }
         addSubview(play)
 
