@@ -23,7 +23,8 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-14
+    # macOS 14 的 arm64 机型在当前账号不可用，统一用 Intel 机型交叉编译双架构
+    runs-on: macos-13
     steps:
       - name: 检出源码
         uses: actions/checkout@v4
