@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## 第三方声明 / Third-party notices
+
+本项目参考并依赖了以下第三方成果：
+
+1. os6/nospeaker — MIT License, Copyright (c) 2026 Cody Collier
+   https://github.com/os6/nospeaker
+   触控板马达的驱动方式（MultitouchSupport 私有框架、波形字典结构）与语音转马达音的双共振峰映射参考了该项目。
+
+2. Maple Mono — SIL Open Font License 1.1
+   https://github.com/subframe7536/maple-font
+   数字与中文标签使用的字体，不随本仓库分发，需自行安装。
+
+3. GitHub 标记 — Copyright GitHub, Inc.
+   src/Resources/github-mark.png 仅用于在应用内链接回本仓库。

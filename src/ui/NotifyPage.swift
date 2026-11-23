@@ -16,6 +16,7 @@ final class NotifyPage: NSView {
     private let status = NSTextField(labelWithString: "")
     private let speechLabel = NSTextField(labelWithString: "Turn 语音")
     private let speechField = NSTextField()
+    private let speechBox = SolidBackdrop(radius: 6, fill: NSColor.white.withAlphaComponent(0.07))
 
     private let eventTitles: [(key: String, title: String)] = [
         ("turn", "Turn 完成"), ("surge", "金价急涨"), ("plunge", "金价急跌"), ("timer", "定时器结束"),
@@ -73,12 +74,19 @@ final class NotifyPage: NSView {
         speechField.font = Tokens.text(11)
         speechField.textColor = Tokens.paper
         speechField.isBordered = false
+        speechField.isEditable = true
+        speechField.isSelectable = true
         speechField.focusRingType = .none
         speechField.drawsBackground = false
-        speechField.placeholderString = EventConfig.defaultSpeech(for: "turn")
+        speechField.placeholderString = "点这里输入，回车或用它播报：" + EventConfig.defaultSpeech(for: "turn")
         speechField.stringValue = settings.event("turn").speech
         speechField.target = self
         speechField.action = #selector(changeSpeech)
+        // 失焦也保存，不用非要回车
+        NotificationCenter.default.addObserver(self, selector: #selector(changeSpeech),
+                                               name: NSControl.textDidEndEditingNotification, object: speechField)
+        // 无边框面板默认不抢焦点，点一下先激活再聚焦
+        speechBox.addGestureRecognizer(NSClickGestureRecognizer(target: self, action: #selector(focusSpeech)))
 
         status.font = Tokens.text(9.5)
         status.textColor = Tokens.muted(0.4)
@@ -86,7 +94,7 @@ final class NotifyPage: NSView {
         status.maximumNumberOfLines = 1
 
         [title, hapticRow, strengthLabel, strength, notifyRow, soundLabel, soundPopup,
-         eventSection, toolSection, status, speechLabel, speechField].forEach(addSubview)
+         eventSection, toolSection, status, speechLabel, speechBox, speechField].forEach(addSubview)
         eventRows.forEach(addSubview)
         toolRows.forEach(addSubview)
     }
@@ -113,8 +121,9 @@ final class NotifyPage: NSView {
             row.frame = NSRect(x: 0, y: 90 + CGFloat(index) * 22, width: width, height: 20)
         }
 
-        speechLabel.frame = NSRect(x: 0, y: 183, width: 60, height: 16)
-        speechField.frame = NSRect(x: 64, y: 182, width: width - 64, height: 20)
+        speechLabel.frame = NSRect(x: 0, y: 184, width: 60, height: 16)
+        speechBox.frame = NSRect(x: 62, y: 181, width: width - 62, height: 22)
+        speechField.frame = NSRect(x: 70, y: 184, width: width - 78, height: 17)
 
         toolSection.frame = NSRect(x: 0, y: 210, width: 160, height: 12)
         for (index, row) in toolRows.enumerated() {
@@ -142,6 +151,12 @@ final class NotifyPage: NSView {
     private func reloadEvents() {
         eventRows.forEach { $0.refresh() }
         StatusHUD.say("已保存")
+    }
+
+    @objc private func focusSpeech() {
+        NSApp.activate(ignoringOtherApps: true)
+        window?.makeKey()
+        window?.makeFirstResponder(speechField)
     }
 
     @objc private func changeSpeech() {

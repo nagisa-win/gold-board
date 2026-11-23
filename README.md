@@ -4,7 +4,7 @@
 
 - **金价**：国际现货黄金按离岸人民币折算的元/克参考价，含分时曲线，接口抖动时多源兜底
 - **唤醒定时器**：用 `caffeinate` 保持系统唤醒，支持倒计时与时间段，参数可勾选并记忆
-- **通知与震动**：触控板马达震动 + 系统通知，含强度、声音，可一键接入本地 Agent 的「Turn 完成」提醒
+- **通知与震动**：触控板马达拍击 / 旋律 / 语音播报 + 系统通知，含强度与声音，可一键接入本地 Agent 的「Turn 完成」提醒
 - **本地缓存**：每分钟记一行，保留 90 天，方便自己拉出来做趋势分析
 
 ![浮窗](docs/images/capsule-hover.png)
@@ -102,7 +102,8 @@ App 在运行时每分钟记一行，写入 `~/Library/Application Support/GoldF
 
 ## 通知与接入
 
-浮卡第三页可一键配置本地 Agent 的「Turn 完成」提醒：
+浮卡第三页的「事件」里，每个提醒都可以选拍击、旋律或语音播报；「Turn 语音」输入框里的文案会交给 `say` 合成后转成马达音。
+同一页还能一键配置本地 Agent 的「Turn 完成」提醒：
 
 | 工具 | 落点 | 说明 |
 | --- | --- | --- |
@@ -145,6 +146,12 @@ docs/images/                 界面截图
 - 仅 Force Touch 触控板可被感知。
 - 应用为 adhoc 签名、未公证，跨机器分发需自行重新签名。
 
+## 致谢
+
+- [os6/nospeaker](https://github.com/os6/nospeaker)：把 MacBook 触控板当作扬声器的项目。本工具的触控板马达驱动思路直接来自它——通过 `MultitouchSupport` 私有框架的 `MTActuationCreateFromDictionary` / `MTActuationActuate` 下发正弦音，用 `BaseWaveform` + `Tones` 字典拼出拍击、旋律，以及把语音的两个共振峰映射成马达音。
+- [Maple Mono](https://github.com/subframe7536/maple-font)：数字与中文标签字体。
+- GitHub 标记归 GitHub, Inc. 所有，仅用于链回本仓库。
+
 ## 许可
 
-[MIT](LICENSE)
+[MIT](LICENSE)。第三方组件的授权与署名见 LICENSE 末尾的「第三方声明」。
