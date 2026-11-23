@@ -9,6 +9,10 @@ trap 'rm -rf "$scratch"' EXIT
 bundle="$scratch/$product"
 mkdir -p "$bundle/Contents/MacOS"
 cp Info.plist "$bundle/Contents/Info.plist"
+if [ -d Resources ]; then
+    mkdir -p "$bundle/Contents/Resources"
+    cp -R Resources/. "$bundle/Contents/Resources/"
+fi
 /usr/bin/plutil -replace LSMinimumSystemVersion -string 12.0 "$bundle/Contents/Info.plist"
 
 # 源码分散在 model / feature / ui / support 子目录，统一收集后一次编译
