@@ -27,6 +27,7 @@ final class WakeController {
 
     private struct Persisted: Codable {
         let pid: Int32
+        let startedAt: Date?
         let endsAt: Date?
         let args: String
     }
@@ -124,14 +125,26 @@ final class WakeController {
         if kill(state.pid, 0) == 0 {
             adoptedPid = state.pid
             endsAt = state.endsAt
-            startedAt = Date()
+            // 恢复真实的开始时间，环形进度才不会在重启后归零；
+            // 旧版本没存 startedAt 时，用 -t 秒数从 endsAt 反推。
+            startedAt = state.startedAt ?? Self.inferStart(endsAt: state.endsAt, args: state.args) ?? Date()
         } else {
             clearState()
         }
     }
 
+    /// 旧状态文件里的 startedAt 缺失时，按 `-t N` 反推开始时刻。
+    private static func inferStart(endsAt: Date?, args: String) -> Date? {
+        guard let endsAt else { return nil }
+        let tokens = args.split(separator: " ")
+        guard let flagIndex = tokens.firstIndex(of: "-t"),
+              flagIndex + 1 < tokens.count,
+              let seconds = Double(tokens[flagIndex + 1]) else { return nil }
+        return endsAt.addingTimeInterval(-seconds)
+    }
+
     private func persist(pid: Int32, args: String) {
-        let state = Persisted(pid: pid, endsAt: endsAt, args: args)
+        let state = Persisted(pid: pid, startedAt: startedAt, endsAt: endsAt, args: args)
         if let data = try? JSONEncoder().encode(state) { try? data.write(to: stateURL) }
     }
 
