@@ -15,3 +15,6 @@ build/
 # Xcode / SPM 若日后启用
 *.xcuserstate
 .swiftpm/
+
+# 本地发版产物
+dist/

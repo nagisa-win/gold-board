@@ -61,19 +61,24 @@ xattr -dr com.apple.quarantine "国内金价.app"
 | --- | --- | --- |
 | ![唤醒](docs/images/page-wake.png) | ![通知](docs/images/page-notify.png) | ![外观](docs/images/page-appearance.png) |
 
-## 发布（GitHub Actions）
+## 发布
 
-推一个 `v*` tag 就会自动编译并发布 Release：
+发版在本地完成：构建 → 打包 DMG → 上传 GitHub Release，一条命令：
 
 ```sh
-git tag v1.0.1
-git push origin v1.0.1
+scripts/release.sh 1.0.1
 ```
 
-- `release.yml`：类型检查 → 写入版本号（`CFBundleShortVersionString` 取 tag、`CFBundleVersion` 取运行号）→ 双架构构建 → 校验签名与架构 → 打包 `GoldFloat-<版本>.zip` 与 `.sha256` → 创建 Release（自动生成变更列表并追加安装说明；同 tag 重复触发只覆盖资产）
-- `build.yml`：只在手动触发时跑一次构建校验（保留产物 14 天），日常 push 不排队占 macOS runner
-- 也可以在 Actions 页面手动触发 `release` 填版本号发版，或手动触发 `build` 只做一次构建校验
-- 产物是 adhoc 签名、未做公证，下载后需要先 `xattr -dr com.apple.quarantine`
+脚本会做这些事：
+
+1. 校验版本号格式与工作区是否干净
+2. 把 `CFBundleShortVersionString` 写成版本号、`CFBundleVersion` 写成 commit 数（只改构建产物，发完还原）
+3. `make build` 出双架构包
+4. `hdiutil` 打成 `dist/GoldFloat-<版本>.dmg`（内含 Applications 软链），同时生成 `.sha256`
+5. 本地没有对应 tag 就自动打 tag 并推送
+6. `gh release create`（已存在则 `upload --clobber`）上传 dmg 与校验和
+
+> 为什么不用 GitHub Actions：公开仓库的标准 macOS runner 本来是免费的，但这个账号排了 12 小时都没被分配机器，`macos-14` 还直接报 “configuration not supported”。`.github/workflows/release.yml` 保留为手动触发，等 runner 能用了再切回云端构建。
 
 ## 命令行
 

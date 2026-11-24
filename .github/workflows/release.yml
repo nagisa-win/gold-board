@@ -1,9 +1,8 @@
 name: release
 
-# 打 tag（v1.2.0）即编译并发布 Release；也可以在 Actions 页面手动指定版本号触发。
+# 注意：当前账号拿不到 GitHub 托管的 macOS runner（排队 12 小时未分配，macos-14 直接报机型不支持），
+# 日常发版请用本地的 scripts/release.sh；这个工作流保留给 runner 可用时手动触发。
 on:
-  push:
-    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
