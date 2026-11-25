@@ -21,7 +21,7 @@ final class WakePage: NSView {
     private let lockToggle = Toggle(isOn: SettingsStore.shared.value.dimOnLock)
 
     private let durations: [(title: String, seconds: Double)] = [
-        ("30 分", 1800), ("1 时", 3600), ("2 时", 7200), ("4 时", 14400),
+        ("30 分", 1800), ("1 时", 3600), ("2 时", 7200), ("4 时", 14400), ("8 时", 28800),
     ]
 
     init() {
@@ -114,7 +114,7 @@ final class WakePage: NSView {
 
         durationRow.frame = NSRect(x: 0, y: 142, width: bounds.width, height: 24)
         for (index, button) in durationButtons.enumerated() {
-            button.frame = NSRect(x: CGFloat(index) * 62, y: 0, width: 56, height: 24)
+            button.frame = NSRect(x: CGFloat(index) * 54, y: 0, width: 50, height: 24)
         }
         rangeRow.frame = NSRect(x: 0, y: 142, width: bounds.width, height: 24)
         startPopup.frame = NSRect(x: 0, y: 0, width: 92, height: 22)
