@@ -17,15 +17,10 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
     exit 1
 fi
 
-# 版本号只写进构建产物，不留在工作区
-restore_plist() { git checkout -- src/Info.plist 2>/dev/null || true; }
-trap restore_plist EXIT
-
 build_number="$(git rev-list --count HEAD)"
-plutil -replace CFBundleShortVersionString -string "$version" src/Info.plist
-plutil -replace CFBundleVersion -string "$build_number" src/Info.plist
 echo "== 构建 v$version (build $build_number) =="
-make build
+# 版本号通过环境变量交给 build.sh，仓库里的 Info.plist 始终不动
+GOLDFLOAT_VERSION="$version" GOLDFLOAT_BUILD="$build_number" make build
 
 echo "== 打包 DMG =="
 mkdir -p dist
