@@ -32,6 +32,11 @@ hdiutil create -quiet -volname "国内金价" -srcfolder "$stage" -ov -format UD
 rm -rf "$stage"
 shasum -a 256 "$dmg" | tee "$dmg.sha256"
 
+# 先把 main 推上去：tag 指向的 commit 必须在远端可达
+if git remote get-url origin >/dev/null 2>&1; then
+    git push origin HEAD:main
+fi
+
 if git rev-parse "$tag" >/dev/null 2>&1; then
     echo "== tag $tag 已存在，直接复用 =="
 else
