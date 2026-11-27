@@ -109,6 +109,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         wake.onChange = { [weak self] in self?.refreshWake() }
         // 唤醒定时自然到点（不是手动停止）时触发「定时器结束」提醒
         wake.onExpire = { [weak self] in self?.fire("timer") }
+        // 结束前 3 分钟给一次短促预告
+        wake.onNearlyExpired = { [weak self] in self?.firePreAlert() }
+
+        // 下拉菜单展开期间锁住浮卡，鼠标移出面板也不会把菜单一起收掉
+        NotificationCenter.default.addObserver(forName: NSMenu.didBeginTrackingNotification,
+                                               object: nil, queue: .main) { [weak self] _ in
+            self?.card.lockOpen()
+        }
         store.onChange = { [weak self] in self?.applySettings() }
         card.pricePage.onRefresh = { [weak self] in self?.feed.refresh() }
         card.pricePage.fallbackRate = { [weak self] in self?.feed.fxRate }
@@ -134,6 +142,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startClock()
 
         if let seconds = launchWakeSeconds {
+            // 调试时可用 --prealert <秒> 把「结束前 3 分钟」缩短成任意秒数
+            if let index = CommandLine.arguments.firstIndex(of: "--prealert"),
+               index + 1 < CommandLine.arguments.count,
+               let lead = Double(CommandLine.arguments[index + 1]) {
+                wake.preAlertLead = lead
+            }
             wake.start(flags: store.value.wakeFlags, seconds: seconds, until: nil)
         }
 
@@ -316,6 +330,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             try? line.write(to: url, atomically: true, encoding: .utf8)
         }
+    }
+
+    /// 定时结束前 3 分钟的短促预告：固定用「双击」，遵循提醒总开关与「定时器结束」开关。
+    private func firePreAlert() {
+        let settings = store.value
+        guard settings.hapticEnabled, settings.event("timer").haptic else { return }
+        Haptics.shared.play("double", strength: settings.hapticStrength)
+        logFire("timer-3min")
     }
 
     private func fire(_ key: String) {

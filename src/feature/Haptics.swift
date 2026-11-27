@@ -27,47 +27,48 @@ final class Haptics {
     }
 
     private let presets: [String: [Pulse]] = [
-        "tap": [Pulse(delay: 0, hz: 70, ms: 12)],
-        "double": [Pulse(delay: 0, hz: 70, ms: 10),
-                   Pulse(delay: 0.11, hz: 70, ms: 10)],
-        "triple": [Pulse(delay: 0, hz: 70, ms: 9),
-                   Pulse(delay: 0.09, hz: 70, ms: 9),
-                   Pulse(delay: 0.18, hz: 70, ms: 9)],
-        "long": [Pulse(delay: 0, hz: 45, ms: 240)],
-        "heart": [Pulse(delay: 0, hz: 45, ms: 60),
-                  Pulse(delay: 0.18, hz: 45, ms: 60),
-                  Pulse(delay: 0.76, hz: 45, ms: 60),
-                  Pulse(delay: 0.94, hz: 45, ms: 60),
-                  Pulse(delay: 1.52, hz: 45, ms: 60),
-                  Pulse(delay: 1.70, hz: 45, ms: 60)],
+        // 频率抬到 240–360Hz：低于 100Hz 只能感到震动、听不到声音
+        "tap": [Pulse(delay: 0, hz: 320, ms: 12)],
+        "double": [Pulse(delay: 0, hz: 320, ms: 10),
+                   Pulse(delay: 0.11, hz: 320, ms: 10)],
+        "triple": [Pulse(delay: 0, hz: 360, ms: 9),
+                   Pulse(delay: 0.09, hz: 360, ms: 9),
+                   Pulse(delay: 0.18, hz: 360, ms: 9)],
+        "long": [Pulse(delay: 0, hz: 260, ms: 240)],
+        "heart": [Pulse(delay: 0, hz: 240, ms: 60),
+                  Pulse(delay: 0.18, hz: 240, ms: 60),
+                  Pulse(delay: 0.76, hz: 240, ms: 60),
+                  Pulse(delay: 0.94, hz: 240, ms: 60),
+                  Pulse(delay: 1.52, hz: 240, ms: 60),
+                  Pulse(delay: 1.70, hz: 240, ms: 60)],
     ]
 
     /// 节奏型：脉宽的疏密变化，比单纯拍击更有辨识度。
     private let rhythms: [String: [Pulse]] = [
         // 雨点：六下快速连击
-        "rain": (0..<6).map { Pulse(delay: Double($0) * 0.055, hz: 95, ms: 8) },
+        "rain": (0..<6).map { Pulse(delay: Double($0) * 0.055, hz: 380, ms: 8) },
         // 敲门：两长一短
-        "knock": [Pulse(delay: 0, hz: 60, ms: 70), Pulse(delay: 0.20, hz: 60, ms: 70),
-                  Pulse(delay: 0.42, hz: 95, ms: 22)],
+        "knock": [Pulse(delay: 0, hz: 280, ms: 70), Pulse(delay: 0.20, hz: 280, ms: 70),
+                  Pulse(delay: 0.42, hz: 460, ms: 22)],
         // SOS：三短三长三短
-        "sos": [Pulse(delay: 0, hz: 80, ms: 45), Pulse(delay: 0.09, hz: 80, ms: 45),
-                Pulse(delay: 0.18, hz: 80, ms: 45),
-                Pulse(delay: 0.42, hz: 80, ms: 150), Pulse(delay: 0.64, hz: 80, ms: 150),
-                Pulse(delay: 0.86, hz: 80, ms: 150),
-                Pulse(delay: 1.32, hz: 80, ms: 45), Pulse(delay: 1.41, hz: 80, ms: 45),
-                Pulse(delay: 1.50, hz: 80, ms: 45)],
+        "sos": [Pulse(delay: 0, hz: 420, ms: 45), Pulse(delay: 0.09, hz: 420, ms: 45),
+                Pulse(delay: 0.18, hz: 420, ms: 45),
+                Pulse(delay: 0.42, hz: 420, ms: 150), Pulse(delay: 0.64, hz: 420, ms: 150),
+                Pulse(delay: 0.86, hz: 420, ms: 150),
+                Pulse(delay: 1.32, hz: 420, ms: 45), Pulse(delay: 1.41, hz: 420, ms: 45),
+                Pulse(delay: 1.50, hz: 420, ms: 45)],
         // 警报：高低交替
         "alarm": [Pulse(delay: 0, hz: 700, ms: 80), Pulse(delay: 0.14, hz: 500, ms: 80),
                   Pulse(delay: 0.28, hz: 700, ms: 80), Pulse(delay: 0.42, hz: 500, ms: 80),
                   Pulse(delay: 0.56, hz: 700, ms: 80)],
         // 上升：频率逐级抬高
-        "rise": (0..<5).map { Pulse(delay: Double($0) * 0.09, hz: 60 + Double($0) * 28, ms: 60) },
+        "rise": (0..<5).map { Pulse(delay: Double($0) * 0.09, hz: 240 + Double($0) * 90, ms: 60) },
         // 下降：与上升相反的坠落感
-        "fall": (0..<5).map { Pulse(delay: Double($0) * 0.09, hz: 172 - Double($0) * 28, ms: 60) },
+        "fall": (0..<5).map { Pulse(delay: Double($0) * 0.09, hz: 600 - Double($0) * 90, ms: 60) },
         // 打字机：不规则的短促敲击
-        "type": [Pulse(delay: 0, hz: 130, ms: 10), Pulse(delay: 0.06, hz: 120, ms: 9),
-                 Pulse(delay: 0.15, hz: 135, ms: 10), Pulse(delay: 0.21, hz: 115, ms: 8),
-                 Pulse(delay: 0.33, hz: 128, ms: 10), Pulse(delay: 0.40, hz: 122, ms: 9)],
+        "type": [Pulse(delay: 0, hz: 480, ms: 10), Pulse(delay: 0.06, hz: 440, ms: 9),
+                 Pulse(delay: 0.15, hz: 500, ms: 10), Pulse(delay: 0.21, hz: 420, ms: 8),
+                 Pulse(delay: 0.33, hz: 470, ms: 10), Pulse(delay: 0.40, hz: 450, ms: 9)],
     ]
 
     /// 旋律：(起始毫秒, 频率 Hz, 时长毫秒)。
@@ -138,9 +139,16 @@ final class Haptics {
 
     // MARK: - 播放入口
 
+    /// 各组增益：旋律频段高、本身更响，压到 0.7；节奏 0.9；简单震动满幅。
+    private func gain(for preset: String) -> Float {
+        if preset.hasPrefix("melody:") { return 0.7 }
+        if preset.hasPrefix("rhythm:") { return 0.9 }
+        return 1.0
+    }
+
     /// 统一入口：简单震动 / 节奏 / 旋律；strength 为 1…5 档。
     func play(_ preset: String, strength: Int) {
-        let level = Self.strengthLevels[max(0, min(4, strength - 1))]
+        let level = Self.strengthLevels[max(0, min(4, strength - 1))] * gain(for: preset)
         if preset.hasPrefix("melody:") {
             playMelody(String(preset.dropFirst("melody:".count)), level: level)
             return

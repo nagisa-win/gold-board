@@ -19,8 +19,14 @@ final class WakeController {
     var onChange: (() -> Void)?
     /// 自然到点时回调一次；手动停止不会触发。
     var onExpire: (() -> Void)?
+    /// 结束前 3 分钟回调一次，用于短促预告。
+    var onNearlyExpired: (() -> Void)?
     /// 到点后待播报的时刻，跨过该时刻即提醒一次（countdown 由 caffeinate 自己退出也覆盖）。
     private var pendingExpiry: Date?
+    /// 结束前 3 分钟的预告提醒时刻；短定时器不会登记。
+    private var pendingPreAlert: Date?
+    /// 提前预告的提前量；调试入口可临时改小以便验证。
+    var preAlertLead: TimeInterval = 180
 
     private let stateURL: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -93,6 +99,10 @@ final class WakeController {
         endsAt = until ?? seconds.map { Date().addingTimeInterval($0) }
         // 有结束时刻才需要提醒；无限唤醒不会触发
         pendingExpiry = endsAt
+        // 只有长于预告量的定时才登记预告
+        if let endsAt, endsAt.timeIntervalSinceNow > preAlertLead {
+            pendingPreAlert = endsAt.addingTimeInterval(-preAlertLead)
+        }
         persist(pid: task.processIdentifier, args: args.joined(separator: " "))
         onChange?()
     }
@@ -101,6 +111,7 @@ final class WakeController {
     /// 手动停止：清掉待提醒标记，不会播报。
     func stop() {
         pendingExpiry = nil
+        pendingPreAlert = nil
         if let process, process.isRunning { process.terminate() }
         process = nil
         if let pid = adoptedPid, kill(pid, 0) == 0 { kill(pid, SIGTERM) }
@@ -120,10 +131,17 @@ final class WakeController {
             startedAt = nil
             endsAt = nil
             pendingExpiry = nil
+            pendingPreAlert = nil
             clearState()
             onChange?()
             if expired { onExpire?() }
             return
+        }
+
+        // 结束前 3 分钟的短促预告
+        if let lead = pendingPreAlert, Date() >= lead {
+            pendingPreAlert = nil
+            onNearlyExpired?()
         }
 
         // 到点提醒：caffeinate 自己退出（-t）与时间段模式都由这里统一处理
@@ -142,6 +160,9 @@ final class WakeController {
             endsAt = state.endsAt
             // 重启接管后如果还没到点，到点时仍然要提醒
             pendingExpiry = state.endsAt
+            if let endsAt, endsAt.timeIntervalSinceNow > preAlertLead {
+                pendingPreAlert = endsAt.addingTimeInterval(-preAlertLead)
+            }
             // 恢复真实的开始时间，环形进度才不会在重启后归零；
             // 旧版本没存 startedAt 时，用 -t 秒数从 endsAt 反推。
             startedAt = state.startedAt ?? Self.inferStart(endsAt: state.endsAt, args: state.args) ?? Date()
