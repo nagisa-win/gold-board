@@ -37,5 +37,7 @@ xcrun lipo -create "$scratch/arm64" "$scratch/x86_64" \
     -output "$bundle/Contents/MacOS/GoldFloat"
 /usr/bin/codesign --force --sign - "$bundle"
 /usr/bin/codesign --verify --strict --all-architectures "$bundle"
+# 先删旧产物：ditto 是合并语义，不删会把上一版遗留的资源留在包里
+rm -rf "build/$product"
 /usr/bin/ditto "$bundle" "build/$product"
 printf '构建完成：%s/build/%s\n' "$PWD" "$product"

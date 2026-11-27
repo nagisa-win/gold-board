@@ -58,4 +58,15 @@ else
         --title "国内金价 $tag" --notes-file "$notes"
 fi
 rm -f "$notes"
+
+# 覆盖安装到 /Applications，本地不再保留 .app 副本
+echo "== 安装到 /Applications =="
+osascript -e 'quit app "国内金价"' >/dev/null 2>&1 || true
+sleep 1
+rm -rf "/Applications/国内金价.app"
+ditto "src/build/国内金价.app" "/Applications/国内金价.app"
+xattr -dr com.apple.quarantine "/Applications/国内金价.app" 2>/dev/null || true
+rm -rf "src/build/国内金价.app"
+open "/Applications/国内金价.app"
+
 echo "== 完成：$(gh release view "$tag" --json url -q .url) =="

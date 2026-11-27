@@ -1,3 +1,5 @@
+<img src="docs/images/appicon.png" width="88" align="right" alt="国内金价图标">
+
 # 国内金价 · 桌面浮窗
 
 一款 macOS 置顶桌面小工具：平时只是一枚显示金价的胶囊浮窗，悬停展开成带左侧三页导航的浮卡。
@@ -77,6 +79,8 @@ scripts/release.sh 1.0.1
 4. `hdiutil` 打成 `dist/GoldFloat-<版本>.dmg`（内含 Applications 软链），同时生成 `.sha256`
 5. 本地没有对应 tag 就自动打 tag 并推送
 6. `gh release create`（已存在则 `upload --clobber`）上传 dmg 与校验和
+
+发版脚本最后会把新版本**覆盖安装到 `/Applications/国内金价.app`** 并启动，本地不再保留其它 `.app` 副本。
 
 > 为什么不用 GitHub Actions：公开仓库的标准 macOS runner 本来是免费的，但这个账号排了 12 小时都没被分配机器，`macos-14` 还直接报 “configuration not supported”。`.github/workflows/release.yml` 保留为手动触发，等 runner 能用了再切回云端构建。
 
