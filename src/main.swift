@@ -63,6 +63,13 @@ if CommandLine.arguments.contains("--haptic-info") {
     exit(0)
 }
 
+/// 调试用：`--wake <秒>` 启动一个倒计时唤醒，便于验证到时提醒。
+let launchWakeSeconds: Double? = {
+    guard let index = CommandLine.arguments.firstIndex(of: "--wake"),
+          index + 1 < CommandLine.arguments.count else { return nil }
+    return Double(CommandLine.arguments[index + 1])
+}()
+
 /// 启动时直接展开浮卡到指定页：`--page price|wake|notify|appearance`。
 let launchPage: Int? = {
     guard let index = CommandLine.arguments.firstIndex(of: "--page"),
@@ -100,6 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.fire(signal == .rising ? "surge" : "plunge")
         }
         wake.onChange = { [weak self] in self?.refreshWake() }
+        // 唤醒定时自然到点（不是手动停止）时触发「定时器结束」提醒
+        wake.onExpire = { [weak self] in self?.fire("timer") }
         store.onChange = { [weak self] in self?.applySettings() }
         card.pricePage.onRefresh = { [weak self] in self?.feed.refresh() }
         card.pricePage.fallbackRate = { [weak self] in self?.feed.fxRate }
@@ -123,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         applySettings()
         feed.start()
         startClock()
+
+        if let seconds = launchWakeSeconds {
+            wake.start(flags: store.value.wakeFlags, seconds: seconds, until: nil)
+        }
 
         // --page 指定页时直接展开浮卡（也方便截图与脚本化打开）。
         if let page = launchPage {
@@ -286,15 +299,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// 记录一次提醒，便于事后核对到底有没有触发。
+    private func logFire(_ key: String) {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("GoldFloat", isDirectory: true)
+        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        let url = base.appendingPathComponent("events.log")
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let line = formatter.string(from: Date()) + "  " + key + "\n"
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(Data(line.utf8))
+            try? handle.close()
+        } else {
+            try? line.write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
     private func fire(_ key: String) {
+        logFire(key)
         let settings = store.value
         let config = settings.event(key)
         if settings.hapticEnabled && config.haptic {
             Haptics.shared.play(config.preset, strength: settings.hapticStrength)
         }
         if settings.systemNotifyEnabled && config.notify {
-            let title = key == "turn" ? "Turn 完成" : key == "surge" ? "金价急涨" : "金价急跌"
-            let body = feed.quote.map { String(format: "%.2f 元/克", $0.price) } ?? ""
+            let price = feed.quote.map { String(format: "%.2f 元/克", $0.price) } ?? ""
+            let title: String
+            let body: String
+            switch key {
+            case "turn": title = "Turn 完成"; body = price
+            case "surge": title = "金价急涨"; body = price
+            case "plunge": title = "金价急跌"; body = price
+            default: title = "唤醒已结束"; body = "定时器到时，系统恢复常规休眠"
+            }
             Notifier.shared.post(title: title, body: body, sound: settings.soundName)
         }
     }

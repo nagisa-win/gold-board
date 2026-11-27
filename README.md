@@ -91,6 +91,9 @@ scripts/release.sh 1.0.1
 # 自检：确认触控板马达是否可用
 "…/GoldFloat" --haptic-info
 
+# 调试：启动即开一个 15 秒倒计时，用来验证「定时器结束」提醒链路
+"…/GoldFloat" --wake 15
+
 # 启动并直接展开到指定页：price | wake | notify | appearance
 open "…/国内金价.app" --args --page wake
 
@@ -103,6 +106,8 @@ open "…/国内金价.app" --args --page wake
 
 App 在运行时每分钟记一行，写入 `~/Library/Application Support/GoldFloat/history/YYYY-MM-DD.csv`，
 保留 90 天（启动时自动清理更早的文件），右键菜单有「打开行情缓存目录」。
+
+每次触发提醒（Turn 完成 / 急涨 / 急跌 / 定时器结束）都会在 `~/Library/Application Support/GoldFloat/events.log` 追加一行时间与事件名，方便核对有没有真的响。
 
 列定义：`time,price_cny_g,gold_usd_oz,usdcnh,source`，价格单位统一为元/克，`source` 标明数据来源。
 每分钟只留第一笔，90 天约 5MB；需要整体分析时用 `--export-history` 合并成一个 CSV。

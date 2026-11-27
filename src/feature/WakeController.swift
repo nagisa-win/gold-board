@@ -17,6 +17,10 @@ final class WakeController {
     private(set) var lastError: String?
 
     var onChange: (() -> Void)?
+    /// 自然到点时回调一次；手动停止不会触发。
+    var onExpire: (() -> Void)?
+    /// 到点后待播报的时刻，跨过该时刻即提醒一次（countdown 由 caffeinate 自己退出也覆盖）。
+    private var pendingExpiry: Date?
 
     private let stateURL: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -87,12 +91,16 @@ final class WakeController {
         process = task
         startedAt = Date()
         endsAt = until ?? seconds.map { Date().addingTimeInterval($0) }
+        // 有结束时刻才需要提醒；无限唤醒不会触发
+        pendingExpiry = endsAt
         persist(pid: task.processIdentifier, args: args.joined(separator: " "))
         onChange?()
     }
 
     /** 停止唤醒并清理状态文件。 */
+    /// 手动停止：清掉待提醒标记，不会播报。
     func stop() {
+        pendingExpiry = nil
         if let process, process.isRunning { process.terminate() }
         process = nil
         if let pid = adoptedPid, kill(pid, 0) == 0 { kill(pid, SIGTERM) }
@@ -105,17 +113,24 @@ final class WakeController {
 
     /** 秒级推进：到点自动停止，并发现被外部结束的进程。 */
     func tick() {
+        // 接管的旧进程消失：只有确实跨过结束时刻才算自然到时
         if let pid = adoptedPid, kill(pid, 0) != 0 {
+            let expired = endsAt.map { Date() >= $0 } ?? false
             adoptedPid = nil
             startedAt = nil
             endsAt = nil
+            pendingExpiry = nil
             clearState()
             onChange?()
+            if expired { onExpire?() }
             return
         }
-        if let endsAt, Date() >= endsAt, isRunning {
-            stop()
-        }
+
+        // 到点提醒：caffeinate 自己退出（-t）与时间段模式都由这里统一处理
+        guard let due = pendingExpiry, Date() >= due else { return }
+        pendingExpiry = nil
+        if let endsAt, Date() >= endsAt, isRunning { stop() }
+        onExpire?()
     }
 
     /** App 启动时接管上一次遗留的唤醒，避免残留进程让 Mac 一直不睡。 */
@@ -125,6 +140,8 @@ final class WakeController {
         if kill(state.pid, 0) == 0 {
             adoptedPid = state.pid
             endsAt = state.endsAt
+            // 重启接管后如果还没到点，到点时仍然要提醒
+            pendingExpiry = state.endsAt
             // 恢复真实的开始时间，环形进度才不会在重启后归零；
             // 旧版本没存 startedAt 时，用 -t 秒数从 endsAt 反推。
             startedAt = state.startedAt ?? Self.inferStart(endsAt: state.endsAt, args: state.args) ?? Date()
